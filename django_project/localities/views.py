@@ -3,7 +3,10 @@ import logging
 LOG = logging.getLogger(__name__)
 
 import uuid
+import csv
+from datetime import datetime
 
+from django.shortcuts import render
 from django.views.generic import DetailView, ListView, FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.http import HttpResponse, Http404
@@ -17,6 +20,8 @@ from .utils import render_fragment, parse_bbox
 from .forms import LocalityForm, DomainForm
 
 from .map_clustering import cluster
+
+import overpass
 
 
 class LocalitiesLayer(JSONResponseMixin, ListView):
@@ -204,3 +209,144 @@ class LocalityCreate(LoginRequiredMixin, SingleObjectMixin, FormView):
 
     def get_form(self, form_class):
         return form_class(domain=self.object, **self.get_form_kwargs())
+
+
+def build_overpass_ql(bounding_box, key_values):
+    """Build a overpass query language based on the arguments
+
+    :param bounding_box: A list that contains South, West, North, East
+    :type bounding_box: list
+
+    :param key_values: A dictionary of key and value. Key represent a key in
+        osm and value represent the possible value that the user wants
+    :type key_values: dict
+
+    :returns: An overpass query language
+    :rtype: str
+    """
+    bounding_box_ql = ','.join([str(x) for x in bounding_box])
+    bounding_box_ql = '(' + bounding_box_ql + ')'
+
+    key_values_ql = ''
+    for key, values in key_values.iteritems():
+        key_ql = '"' + key + '"'
+        values_ql = '"' + '|'.join(values) + '"'
+
+        # Use ~ for not exact, = for exact value
+        key_value_ql = '[' + key_ql + '~' + values_ql + ']'
+        key_values_ql += key_value_ql
+
+    overpass_ql = 'node' + key_values_ql + bounding_box_ql + ';out;'
+
+    return overpass_ql
+
+
+def parse_overpass_result(dictionary_result):
+    """Parse result from overpass.
+
+    :param dictionary_result: A dictionary that contains the result.
+    :type dictionary_result: dict
+
+    :returns: A list of nodes, each element contains id, lon, lat, amenity,
+            and name
+    :rtype: list
+    """
+    result = []
+
+    elements = dictionary_result['elements']
+    for element in elements:
+        node = {}
+        latitude = element['lat']
+        longitude = element['lon']
+        node_id = element['id']
+        node['latitude'] = latitude
+        node['longitude'] = longitude
+        node['id'] = node_id
+        tags = element['tags']
+        for key, value in tags.iteritems():
+            node[key] = value
+
+        result.append(node)
+    return result
+
+
+def list_of_dict_to_csv(list_of_dict, filename=''):
+    """Create a csv file from list of dict.
+
+    Assuming that all have the same dictionary keys.
+    :param list_of_dict: List of uniform dictionary
+    :type list_of_dict: list
+
+    :param filename: Filename for the csv file. If empty uses current_time.csv.
+    :type filename: str
+
+    :returns: A path to csv file
+    :rtype: str
+    """
+    if not filename:
+        filename = datetime.now().strftime('%Y%m%d_%H%M%S') + '.csv'
+    keys = []
+    for dictionary in list_of_dict:
+        list_key = dictionary.keys()
+        for key in list_key:
+            if key not in keys:
+                keys.append(key)
+
+    output_file = open(filename, 'wb')
+    writer = csv.DictWriter(output_file, keys)
+    writer.writeheader()
+    for row in list_of_dict:
+        writer.writerow(
+            dict((k, v.encode('utf-8') if type(v) is unicode else v)
+                 for k, v in row.iteritems()))
+    output_file.close()
+
+    return filename
+
+
+def importer(request):
+    context = {}
+    try:
+        boundary = {
+            'north': request.GET['north'],
+            'east': request.GET['east'],
+            'south': request.GET['south'],
+            'west': request.GET['west'],
+            }
+        context['boundary'] = boundary
+        context['flag_boundary'] = True
+
+    except KeyError:
+        context['flag_boundary'] = False
+        return render(request, 'importer.html', context)
+
+    # Use overpass
+    api = overpass.API()
+    key_values = {
+        'amenity': [
+            'hospital',
+            'clinic',
+            'community_centre',
+            'social_centre',
+            'pharmacy',
+            'social_facility',
+            'nursing_home',
+            'doctors',
+            'dentist'
+        ]
+    }
+    bounding_box = [
+        boundary['south'],
+        boundary['west'],
+        boundary['north'],
+        boundary['east'],
+    ]
+    overpass_ql = build_overpass_ql(bounding_box, key_values)
+    context['overpass_ql'] = overpass_ql
+    response = api.Get(overpass_ql)
+    good_result = parse_overpass_result(response)
+
+    filename = list_of_dict_to_csv(good_result)
+    context['filename'] = filename
+
+    return render(request, 'importer.html', context)

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<h1>OSM Importer</h1>
+<form action="/importer/" method="get">
+    <div><label>North: <input type="text" name="north"></label></div>
+    <div><label>East: <input type="text" name="east"></label></div>
+    <div><label>South: <input type="text" name="south"></label></div>
+    <div><label>West: <input type="text" name="west"></label></div>
+    <input type="submit" value="Import">
+</form>
+<div>
+    <h1>Previous Import</h1>
+</div>
+{% if flag_boundary %}
+    <div><label>North: {{ boundary.north }} </label></div>
+    <div><label>East: {{ boundary.east}} </label></div>
+    <div><label>South: {{ boundary.south }} </label></div>
+    <div><label>West: {{ boundary.west }} </label></div>
+    <div>Imported to : {{ filename }} </div>
+{% endif %}
+</body>
+</html>

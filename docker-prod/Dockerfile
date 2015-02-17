@@ -18,7 +18,7 @@ RUN apt-get -y update
 
 RUN apt-get -y install libpq5 python-gdal python-geoip \
     python python-dev python-distribute python-pip \
-    python-psycopg2 npm node rpl
+    python-psycopg2 npm node git rpl
 RUN npm -g install yuglify
 
 # Ubuntu is messed up and aliases node as node js
@@ -27,9 +27,12 @@ RUN npm -g install yuglify
 
 RUN rpl "env node" "env nodejs" /usr/local/lib/node_modules/yuglify/bin/yuglify
 
+# (Ismail) I don't know why, but after adding REQUIREMENTS.txt from git, I
+# need to put uwsgi before it.
+RUN pip install uwsgi
 ADD REQUIREMENTS.txt /REQUIREMENTS.txt
 RUN pip install -r /REQUIREMENTS.txt
-RUN pip install uwsgi
+
 
 ADD uwsgi.conf /uwsgi.conf
 ADD uwsgi_params /uwsgi_params

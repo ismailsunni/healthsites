@@ -7,4 +7,5 @@ django-pipeline>=1.4
 nodeenv
 raven
 python-social-auth
+git+git://github.com/mvexel/overpass-api-python-wrapper.git@05640507582be5b5b7fc8a7ed37138e792b03811
 django-pg-fts

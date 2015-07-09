@@ -6,6 +6,7 @@ INSTALLED_APPS += (
     'pipeline',
     'social.apps.django_app.default',
     'pg_fts',
+    'crispy_forms'
 )
 
 # define template function (example for underscore)

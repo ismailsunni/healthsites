@@ -5,7 +5,8 @@ from .views import (
     LocalitiesLayer,
     LocalityInfo,
     LocalityUpdate,
-    LocalityCreate
+    LocalityCreate,
+    DataLoader
 )
 
 urlpatterns = patterns(
@@ -25,5 +26,7 @@ urlpatterns = patterns(
     url(
         r'^localities/form/(?P<domain>\w+)$', LocalityCreate.as_view(),
         name='locality-create'
-    )
+    ),
+
+    url(r'^data-loader$', DataLoader.as_view(), name='data-loader')
 )

@@ -6,7 +6,7 @@ LOG = logging.getLogger(__name__)
 import django.forms as forms
 from django.utils.safestring import mark_safe
 
-from .models import Domain
+from .models import Domain, DataLoader
 from .utils import render_fragment
 
 
@@ -109,46 +109,30 @@ class HorizontalRadioRenderer(forms.RadioSelect.renderer):
     def render(self):
         return mark_safe(u'\n'.join([u'%s\n' % w for w in self]))
 
+
 class DataLoaderForm(forms.Form):
     """Used when loading data."""
 
-    REPLACE_DATA_CODE = 1
-    UPDATE_DATA_CODE = 2
+    class Meta:
+        model = DataLoader
+        fields = (
+            'organisation_name',
+            'json_concept_mapping',
+            'csv_data',
+            'data_loader_mode'
+        )
 
-    DATA_LOADER_MODE_CHOICES = (
-        (REPLACE_DATA_CODE, 'Replace Data'),
-        (UPDATE_DATA_CODE, 'Update Data')
-    )
+    def __init__(self, *args, **kwargs):
+        self.author = kwargs.pop('user', None)
+        super(DataLoaderForm, self).__init__(*args, **kwargs)
 
-    organization_name = forms.CharField(
-        label="Organization's name",
-        widget=forms.TextInput(
-            attrs={
-                'class': 'form-control',
-                'placeholder': 'Name of the organization.'
-            }
-        )
-    )
-    json_concept_mapping = forms.FileField(
-        label='JSON Concept Mapping',
-        # upload_to=json_file_name,
-        widget=forms.ClearableFileInput(
-            attrs={'class': 'form-control'}
-        )
-    )
-    csv_data = forms.FileField(
-        label='CSV Data',
-        # upload_to=csv_file_name,
-        widget=forms.ClearableFileInput(
-            attrs={'class': 'form-control'}
-        )
-    )
-    data_loader_mode = forms.ChoiceField(
-        label='Data Loader Mode',
-        choices=DATA_LOADER_MODE_CHOICES,
-        initial=REPLACE_DATA_CODE,
-        widget=forms.RadioSelect(
-            renderer=HorizontalRadioRenderer,
-            attrs={'class': 'form-control'}
-        )
-    )
+    def save(self, commit=True):
+        data = self.cleaned_data
+        data_loader = super(DataLoaderForm, self).save(commit=False)
+        data_loader.applied = False
+        data_loader.status = DataLoader.PENDING_CODE
+        data_loader.author = ''
+
+        if commit:
+            data_loader.save()
+        return data_loader

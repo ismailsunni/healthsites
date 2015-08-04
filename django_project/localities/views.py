@@ -208,10 +208,4 @@ class DataLoader(FormView):
 
     template_name = 'data_loader_form.html'
     form_class = DataLoaderForm
-    success_url = ''
-
-    def form_valid(self, form):
-        return super(FormView, self).form_valid(form)
-
-    def get_form(self, form_class):
-        return form_class(**self.get_form_kwargs())
+    success_url = '/data-loader'

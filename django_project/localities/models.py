@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.contrib.gis.db import models
 from django.conf import settings
+from django.contrib.auth.models import User
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 
@@ -436,3 +437,82 @@ class LocalityIndex(models.Model):
 
 # register signals
 import signals  # noqa
+
+
+class DataLoader(models.Model):
+    """
+    """
+    REPLACE_DATA_CODE = 1
+    UPDATE_DATA_CODE = 2
+
+    DATA_LOADER_MODE_CHOICES = (
+        (REPLACE_DATA_CODE, 'Replace Data'),
+        (UPDATE_DATA_CODE, 'Update Data')
+    )
+
+    PENDING_CODE = 1
+    REJECTED_CODE = 2
+    ACCEPTED_CODE = 3
+
+    STATUS_CHOICES = (
+        (PENDING_CODE, 'Pending'),
+        (REJECTED_CODE, 'Rejected'),
+        (ACCEPTED_CODE, 'Accepted'),
+    )
+
+    organisation_name = models.CharField(
+        name='Organization\'s Name',
+        help_text='Organization\'s Name',
+        null=False,
+        blank=False,
+    )
+
+    json_concept_mapping = models.FileField(
+        name='JSON Concept Mapping',
+        help_text='JSON Concept Mapping File.',
+        upload_to='json_mapping/%Y/%m/%d',
+        max_length=100
+    )
+
+    csv_data = models.FileField(
+        name='CSV Data',
+        help_text='CSV data that contains the data.',
+        upload_to='csv_data/%Y/%m/%d',
+        max_length=100
+    )
+
+    data_loader_mode = models.IntegerField(
+        choices=DATA_LOADER_MODE_CHOICES,
+        verbose_name="Data Loader Mode",
+        help_text='The mode of the data loader.',
+        blank=False,
+        null=False
+    )
+
+    applied = models.BooleanField(
+        verbose_name='Applied',
+        help_text='Whether the data update has been applied or not.',
+        default=False
+    )
+
+    status = models.IntegerField(
+        choices=STATUS_CHOICES,
+        verbose_name="Data Loader Status",
+        help_text='The status of the data loader..',
+        blank=False,
+        null=False,
+        default=PENDING_CODE
+    )
+
+    author = models.ForeignKey(
+        User,
+        verbose_name='Author',
+        help_text='The user who propose the data loader.',
+        null=False
+    )
+
+    approver = models.ForeignKey(
+        User,
+        verbose_name='Approver',
+        help_text='The user who approve the data loader.',
+    )

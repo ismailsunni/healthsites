@@ -465,6 +465,7 @@ class DataLoader(models.Model):
         help_text='Organization\'s Name',
         null=False,
         blank=False,
+        max_length=100
     )
 
     json_concept_mapping = models.FileField(
@@ -515,4 +516,5 @@ class DataLoader(models.Model):
         User,
         verbose_name='Approver',
         help_text='The user who approve the data loader.',
+        related_name='%(class)s_approver'
     )

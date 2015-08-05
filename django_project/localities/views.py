@@ -9,6 +9,9 @@ from django.views.generic.detail import SingleObjectMixin
 from django.http import HttpResponse, Http404
 from django.contrib.gis.geos import Point
 from django.db import transaction
+from django.shortcuts import render_to_response, loader
+from django.http import HttpResponseRedirect, HttpResponse
+from django.template import RequestContext
 
 from braces.views import JSONResponseMixin, LoginRequiredMixin
 
@@ -203,9 +206,15 @@ class LocalityCreate(LoginRequiredMixin, SingleObjectMixin, FormView):
         return HttpResponse('ERROR creating Locality and values')
 
 
-class DataLoader(FormView):
-    """Handles data loading."""
-
-    template_name = 'data_loader_form.html'
-    form_class = DataLoaderForm
-    success_url = '/data-loader'
+def data_loader_view(request):
+    if request.POST:
+        if request.POST.get('cancel', None):
+            return HttpResponseRedirect('/')
+        form = DataLoaderForm(request.POST)
+        if form.is_valid():
+            data_loader = form.save()
+            return HttpResponseRedirect('/')
+    else:
+        form = DataLoaderForm(request.POST)
+    variables = RequestContext(request, {'form': form})
+    return render_to_response("data_loader_form.html", variables)

@@ -6,7 +6,6 @@ from .views import (
     LocalityInfo,
     LocalityUpdate,
     LocalityCreate,
-    DataLoader
 )
 
 urlpatterns = patterns(
@@ -28,5 +27,5 @@ urlpatterns = patterns(
         name='locality-create'
     ),
 
-    url(r'^data-loader$', DataLoader.as_view(), name='data-loader')
+    url(r'^data-loader$', 'localities.views.data_loader_view', name='data-loader')
 )

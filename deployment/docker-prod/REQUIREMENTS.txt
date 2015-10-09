@@ -6,7 +6,8 @@ django-model-utils
 django-pipeline>=1.4
 nodeenv
 raven
-python-social-auth
+#python-social-auth
+git+https://github.com/ismailsunni/python-social-auth.git@patch-713
 django-pg-fts
 django-forms-bootstrap
 celery
